@@ -1,0 +1,5 @@
+elasticsearch==7.16.0
+transformers
+torch
+requests
+sentence-transformers
