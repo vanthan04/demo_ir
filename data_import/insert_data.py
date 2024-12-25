@@ -1,19 +1,12 @@
-import json
 import pandas as pd
-import os
 import time
 import numpy as np
 from elasticsearch import Elasticsearch, helpers
 from elasticsearch.helpers import BulkIndexError
 from httpx import TransportError
 
-# Initialize Elasticsearch client
-client = Elasticsearch(
-    hosts=[{'host': 'localhost', 'port': 9200}],  # Định nghĩa host và port
-    timeout=60,  # Tăng thời gian chờ (timeout) lên 60 giây
-    max_retries=10,  # Tăng số lần thử lại
-    retry_on_timeout=True  # Bật retry nếu timeout
-)
+client = Elasticsearch([{'host': 'localhost', 'port': 9200, 'scheme': 'http'}]).options(request_timeout=120)
+
 
 index_name = "tvtt"
 
@@ -41,24 +34,24 @@ def process_df(df):
     return docs
 
 
-def bulk_insert_with_retry(client, docs_batch, index_name=index_name, max_retries=5):
-    retry_count = 0
-    while retry_count < max_retries:
-        try:
-            success, failed = helpers.bulk(client, docs_batch, index=index_name, request_timeout=60)
-            print(f"Successfully inserted {success} documents, Failed {failed} documents.")
-            break  # Dừng lại nếu thành công
-        except (ConnectionError, TransportError) as e:
-            retry_count += 1
-            print(f"Error occurred: {e}. Retrying {retry_count}/{max_retries}...")
-            time.sleep(2)  # Chờ 2 giây trước khi retry
-        except BulkIndexError as bulk_error:
-            # Xử lý lỗi BulkIndexError để ghi lại thông tin chi tiết
-            print(f"Bulk index error: {len(bulk_error.errors)} document(s) failed.")
-            break  # Ngừng retry khi gặp lỗi này, vì đó là lỗi từ tài liệu
+import time
+from elasticsearch import helpers, TransportError, ConnectionError
+from elasticsearch.helpers import BulkIndexError
 
-    if retry_count == max_retries:
-        print("Max retries reached. Bulk insert failed for this batch.")
+def bulk_insert(client, docs_batch, index_name=index_name):
+    try:
+        success, failed = helpers.bulk(client, docs_batch, index=index_name)
+        print(f"Chèn thành công {success} tài liệu, Thất bại {len(failed)} tài liệu.")
+    except (ConnectionError, TransportError) as e:
+        # Xử lý lỗi kết nối hoặc lỗi truyền thông
+        print(f"Error occurred: {e}.")
+    except BulkIndexError as bulk_error:
+        # Xử lý lỗi BulkIndexError để ghi lại thông tin chi tiết
+        print(f"Bulk index error: {len(bulk_error.errors)} document(s) failed.")
+        for error in bulk_error.errors:
+            print(f"Document failed: {error}")
+
+
 
 file_path = "ir_data.pkl"
 
@@ -72,10 +65,12 @@ if client is not None:
 
         # Chuyển đổi dữ liệu sang định dạng cho Elasticsearch
         docs = process_df(data_df)
-        print(f"Đã chuyển batch {batch_num + 1} dòng {batch_num * batch_size} sang định dạng Elasticsearch")
 
         # Chèn dữ liệu batch vào Elasticsearch
-        bulk_insert_with_retry(client, docs)
+        bulk_insert(client, docs)
+
+        print()
+        time.sleep(1)
 
     print("Hoàn thành xử lý tất cả các batch")
 else:

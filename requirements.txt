@@ -1,5 +1,6 @@
-elasticsearch==7.16.0
-transformers
-torch
+elastic-transport
+elasticsearch
 requests
-sentence-transformers
+urllib3
+pandas
+httpx

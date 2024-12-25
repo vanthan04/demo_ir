@@ -1,0 +1,59 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1 
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK 
+    volumes:
+      - elasticsearch-data-volume:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - esnet
+  
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    restart: always 
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601 
+    depends_on: 
+      - elasticsearch
+    networks:
+      - esnet
+  
+  app:
+    build: .
+    container_name: flask-app
+    command: python app.py
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - elasticsearch
+      - kibana
+    networks:
+      - esnet
+
+
+volumes:
+  elasticsearch-data-volume:
+    driver: local
+
+networks:
+  esnet:
+    driver: bridge

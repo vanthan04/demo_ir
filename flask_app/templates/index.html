@@ -1,39 +1,46 @@
 <!DOCTYPE html>
-<html lang="vi">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tìm kiếm Câu hỏi và Trả lời</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  </head>
-  <body>
-    <div class="container mt-5">
-      <h1 class="mb-4">Tìm kiếm Câu hỏi và Trả lời</h1>
-      <form action="/" method="post">
-        <div class="mb-3">
-          <label for="query" class="form-label">Nhập câu hỏi của bạn:</label>
-          <input type="text" class="form-control" id="query" name="query" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-      </form>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Fast searching</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
 
-      {% if query and results %}
-        <h2 class="mt-5">Câu hỏi: {{ query }}</h2>
-        <p>Kết quả liên quan nhất là: <strong>{{ results[0]['context'] }}</strong> với độ tương đồng cosin là <strong>{{ results[0]['cosine_similarity'] }}</strong></p>
-        <br />
-        <p>Tất cả kết quả:</p>
-        <ol>
-          {% for result in results %}
-            <li>
-              <div>
-                <p><strong>Ngữ cảnh:</strong> {{ result['context'] }}</p>
-                <p><strong>Độ tương đồng Cosin:</strong> {{ result['cosine_similarity'] }}</p>
-                <hr>
-              </div>
-            </li>
-          {% endfor %}
-        </ol>
-      {% endif %}
-    </div>
-  </body>
+    <body>
+        <div class="bg-gray-700 px-3 py-1">
+            <h2 class="text-3xl font-light text-white m-0"><a href="/">Fast searching Demo </a></h2>
+        </div>
+        <div class="justify-center pl-60 ml-96">
+            <form action ="/search" method = "POST">
+                <input type="text" placeholder="Search here..." name="search"
+                    class="border-2 border-gray-700 mt-10 w-2/5 py-3 px-4"></input>
+                <button class="bg-blue-700 text-xl hover:bg-blue-500 text-white py-2 px-3">
+                Search
+                </button>
+            </form>
+        </div>
+        {% block content %}
+
+        <div>
+            <h2 class="text-gray-800 font-bold pl-2/5 mt-10">{{ error_message }}</h2>
+        </div>
+
+        <div class="justify-items-center">
+            {% for d in data %}
+            <div
+        class="transition duration-500 ease-in-out flex py-3 px-2 hover:bg-blue-400 transform hover:-translate-y-1 hover:scale-110 hover:text-white hover:shadow-none hover:rounded border border-gray-300 shadow-lg">
+                <div class="w-3/5 mr-0">
+                    <h2 class="text-gray-800 font-bold">{{ d.order_date }}</h2>
+                    <p>{{ d.user}}</p>
+                    {% for dd in d.products %}
+                        <p>{{ dd.product_name}}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endblock %}
+    </body>
+
 </html>

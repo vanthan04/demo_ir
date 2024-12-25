@@ -1,4 +1,8 @@
+certifi
+elastic-transport==7.15.0
+elasticsearch==7.15.0
 Flask
+requests
+urllib3
 transformers
-elasticsearch
 torch
