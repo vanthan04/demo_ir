@@ -1,46 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Fast searching</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast searching</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            min-height: 100vh; /* Đảm bảo chiều cao tối thiểu bằng chiều cao màn hình */
+            display: flex;
+            flex-direction: column;
+            margin: 0; /* Xóa margin mặc định */
+        }
+        footer {
+            margin-top: auto; /* Đẩy footer xuống cuối */
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="bg-gray-700 px-3 py-2">
+        <h2 class="text-3xl font-light text-white m-0"><a href="/">Fast searching Demo</a></h2>
+    </div>
 
-    <body>
-        <div class="bg-gray-700 px-3 py-1">
-            <h2 class="text-3xl font-light text-white m-0"><a href="/">Fast searching Demo </a></h2>
-        </div>
-        <div class="justify-center pl-60 ml-96">
-            <form action ="/search" method = "POST">
-                <input type="text" placeholder="Search here..." name="search"
-                    class="border-2 border-gray-700 mt-10 w-2/5 py-3 px-4"></input>
-                <button class="bg-blue-700 text-xl hover:bg-blue-500 text-white py-2 px-3">
+    <!-- Search Form -->
+    <div class="flex justify-center mt-10">
+        <form action="/search" method="POST" class="flex items-center space-x-3">
+            <input 
+                type="text" 
+                placeholder="Search here..." 
+                name="query" 
+                value="{{ query }}"
+                class="border-2 border-gray-700 w-96 py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button 
+                type="submit" 
+                class="bg-blue-700 text-xl hover:bg-blue-500 text-white py-2 px-4">
                 Search
-                </button>
-            </form>
-        </div>
-        {% block content %}
+            </button>
+        </form>
+    </div>
 
-        <div>
-            <h2 class="text-gray-800 font-bold pl-2/5 mt-10">{{ error_message }}</h2>
-        </div>
+    <!-- Error Message -->
+    {% if error_message %}
+    <div class="flex justify-center mt-5">
+        <p class="text-red-600 text-lg">{{ error_message }}</p>
+    </div>
+    {% endif %}
 
-        <div class="justify-items-center">
-            {% for d in data %}
-            <div
-        class="transition duration-500 ease-in-out flex py-3 px-2 hover:bg-blue-400 transform hover:-translate-y-1 hover:scale-110 hover:text-white hover:shadow-none hover:rounded border border-gray-300 shadow-lg">
-                <div class="w-3/5 mr-0">
-                    <h2 class="text-gray-800 font-bold">{{ d.order_date }}</h2>
-                    <p>{{ d.user}}</p>
-                    {% for dd in d.products %}
-                        <p>{{ dd.product_name}}</p>
-                    {% endfor %}
+    <!-- Results Section -->
+    {% if results %}
+    <div class="mt-10 px-5">
+        <h2 class="text-gray-800 font-bold text-xl mb-5">Top Results</h2>
+        <div class="space-y-4">
+            {% for result in results %}
+            <div class="transition duration-500 ease-in-out border border-gray-300 p-4 rounded shadow-lg hover:bg-blue-400 hover:text-white hover:scale-105">
+                <h3 class="text-lg font-bold">{{ result.title }}</h3>
+                <p class="text-sm text-gray-600 text-preview line-clamp-3">{{ result.context }}</p>
+                <div class="mt-2">
+                    <a href="/detail/{{ result.id }}" class="text-blue-700 hover:underline">Read More</a>
+                    <p class="text-sm mt-1"><strong>Cosine Similarity:</strong> {{ result.cosine_similarity }}</p>
                 </div>
             </div>
             {% endfor %}
         </div>
-        {% endblock %}
-    </body>
+    </div>
+    {% else %}
+    <div class="flex justify-center mt-10">
+        <p class="text-gray-600 text-lg">No results found. Try a different query.</p>
+    </div>
+    {% endif %}
+    <!-- Footer -->
+    <footer class="mt-auto bg-gray-800 text-white text-center py-4">
+        <p class="text-sm">&copy; 2024 Fast Searching Demo. All rights reserved.</p>
+    </footer>
+</body>
 
 </html>
