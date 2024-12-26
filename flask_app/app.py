@@ -43,6 +43,7 @@ def home():
 @app.route("/search", methods=["GET", "POST"])
 def search():
     error_message = ""  # Biến để lưu thông báo lỗi
+    results = []  # Danh sách kết quả trả về từ Elasticsearch
 
     if request.method == "POST":
         query = request.form.get("query")  # Lấy truy vấn từ form
@@ -72,29 +73,76 @@ def search():
             try:
                 response = es.search(index=index_name, body=search_query)
                 hits = response['hits']['hits']  # Lấy các kết quả trả về từ Elasticsearch
+                print(hits)
+
+                # Chuẩn bị dữ liệu để hiển thị
+                for hit in hits:
+                    passage = hit['_source']
+                    score = hit['_score']  # Lấy điểm cosine similarity từ Elasticsearch
+
+                    result = {
+                        'id': hit['_id'],  # ID tài liệu để tạo liên kết
+                        'title': passage.get('title', 'No title'),
+                        'context': passage.get('text', ''),  # Nội dung của tài liệu
+                        'cosine_similarity': score  # Điểm cosine similarity
+                    }
+                    results.append(result)
+                    results = sorted(results, key=lambda x: x['cosine_similarity'])
             except Exception as e:
                 error_message = f"Error while querying Elasticsearch: {e}"  # Lưu thông báo lỗi vào biến
                 print(f"Error while querying Elasticsearch: {e}")
-                hits = []
 
-            results = []
-            for hit in hits:
-                passage = hit['_source']
-                score = hit['_score']  # Lấy điểm cosine similarity từ Elasticsearch
+    # Render lại giao diện với kết quả trả về từ Elasticsearch
+    return render_template("index.html", query=query, results=results, error_message=error_message)
 
-                result = {
-                    'context': passage.get('text', ''),  # Lấy nội dung của tài liệu
-                    'cosine_similarity': score  # Điểm cosine similarity
-                }
+@app.route("/detail/<doc_id>")
+def detail(doc_id):
+    try:
+        # Tìm kiếm tài liệu theo ID trong Elasticsearch
+        response = es.get(index="tvtt", id=doc_id)
+        document = response["_source"]
+    except Exception as e:
+        return f"Error fetching document: {e}", 500
 
-                results.append(result)
+    return render_template("detail.html", document=document)
 
-            # Render lại giao diện với kết quả trả về từ Elasticsearch
-            return render_template("index.html", query=query, results=results, error_message=error_message)
 
-    # Nếu không có truy vấn POST, render giao diện mặc định
-    return render_template("index.html", query=None, results=None, error_message=error_message)
+# @app.route("/all_data")
+# def all_data():
+#     data = []
+#     error_message = ""
+
+#     # Lấy query từ phương thức GET
+#     query = request.args.get("query", "")  # Mặc định là chuỗi rỗng nếu không có query
+
+#     try:
+#         # Kiểm tra nếu index tồn tại và lấy dữ liệu
+#         if es.indices.exists(index="tvtt"):
+#             if query:
+#                 # Nếu có query, tìm kiếm với match
+#                 response = es.search(index="tvtt", body={
+#                     "query": {
+#                         "match": {"text": query}
+#                     }
+#                 })
+#             else:
+#                 # Nếu không có query, trả về tất cả dữ liệu
+#                 response = es.search(index="tvtt", body={"query": {"match_all": {}}}, size=100)
+
+#             data = [hit['_source'] for hit in response['hits']['hits']]
+#         else:
+#             error_message = "Index 'tvtt' not found in Elasticsearch."
+#     except Exception as e:
+#         error_message = f"Error fetching data from Elasticsearch: {e}"
+#     print(f"Data: {data}")
+#     print(f"Error Message: {error_message}")
+#     print(f"Query: {query}")
+
+
+#     return render_template("all_data.html", data=data, error_message=error_message, query=query, enumerate=enumerate)
+
+
 
 
 if __name__ == "__main__":
-    app.run(debug=False,host='0.0.0.0', port=5000)
+    app.run(debug=True,host='0.0.0.0', port=5000)
